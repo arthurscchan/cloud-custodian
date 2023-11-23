@@ -48,10 +48,7 @@ class AdmissionControllerHandler(http.server.BaseHTTPRequestHandler):
                 resources = p.push(req)
                 action = p.data["mode"].get("on-match", "deny")
                 result = evaluate_result(action, resources)
-                if result in (
-                    "allow",
-                    "warn",
-                ):
+                if result in ("allow", "warn"):
                     verb = "allowing"
                 else:
                     verb = "denying"
@@ -193,13 +190,11 @@ def init(
     if use_tls:
         import ssl
 
-        server.socket = ssl.wrap_socket(
-            server.socket,
-            server_side=True,
-            certfile=cert_path,
-            keyfile=cert_key_path,
-            ca_certs=ca_cert_path,
-        )
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.verify_mode = ssl.CERT_REQUIRED
+        context.load_verify_locations(cafile=ca_cert_path)
+        context.load_cert_chain(certfile=cert_path, keyfile=cert_key_path)
+        server.socket = context.wrap_socket(server.socket, server_side=True)
 
     log.info(f"Serving at http{'s' if use_tls else ''}://{host}:{port}")
     while True:
